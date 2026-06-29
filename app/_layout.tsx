@@ -1,10 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
-import { View, StyleSheet, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider, useAuth } from '@/context/auth';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -13,19 +14,52 @@ export const unstable_settings = {
 const PHONE_WIDTH = 393;
 const PHONE_HEIGHT = 852;
 
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+
+  const inAuthRoute = segments[0] === 'auth';
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#fff" size="large" />
+      </View>
+    );
+  }
+
+  if (!session && !inAuthRoute) {
+    router.replace('/auth');
+    return null;
+  }
+
+  if (session && inAuthRoute) {
+    router.replace('/(tabs)');
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const { width: screenW, height: screenH } = Dimensions.get('window');
+  const { width: screenW } = Dimensions.get('window');
   const isLargeScreen = screenW > PHONE_WIDTH + 40;
 
   const inner = (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthGate>
+          <Stack>
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+          </Stack>
+        </AuthGate>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </AuthProvider>
   );
 
   if (!isLargeScreen) return inner;
