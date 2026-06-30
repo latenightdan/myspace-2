@@ -23,6 +23,7 @@ import { SongPicker } from '@/components/SongPicker';
 import { SpotifyTrack } from '@/hooks/use-spotify';
 import { useAuth } from '@/context/auth';
 import { useProfile } from '@/hooks/use-profile';
+import { useFriends } from '@/hooks/use-friends';
 
 const { width } = Dimensions.get('window');
 const POST_WIDTH = width - 24;
@@ -434,6 +435,7 @@ const FONT_OPTIONS = [
 export default function ProfileScreen() {
   const { signOut } = useAuth();
   const { profile, posts: dbPosts, loading: profileLoading, saveProfile, addPost, deletePost: dbDeletePost, reorderPosts } = useProfile();
+  const { accepted: acceptedFriends } = useFriends();
 
   // ── local UI state (hydrated from db on load) ────────────────────────────
   const [bg,            setBgState]       = useState(BACKGROUND_OPTIONS[0]);
@@ -712,7 +714,7 @@ export default function ProfileScreen() {
 
           {/* friends count */}
           <TouchableOpacity style={styles.friendsRow}>
-            <Text style={[styles.friendsCount, { color: accentColor }]}>0</Text>
+            <Text style={[styles.friendsCount, { color: accentColor }]}>{acceptedFriends.length}</Text>
             <Text style={styles.friendsLabel}>friends</Text>
           </TouchableOpacity>
 

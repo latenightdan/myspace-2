@@ -30,9 +30,10 @@ export default function FriendProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [posts,   setPosts]   = useState<PostRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [profile,      setProfile]      = useState<Profile | null>(null);
+  const [posts,        setPosts]        = useState<PostRow[]>([]);
+  const [friendCount,  setFriendCount]  = useState(0);
+  const [loading,      setLoading]      = useState(true);
 
   const [fontsLoaded] = useFonts({
     SpecialElite_400Regular, PermanentMarker_400Regular, PressStart2P_400Regular,
@@ -46,9 +47,11 @@ export default function FriendProfileScreen() {
     Promise.all([
       supabase.from('profiles').select('*').eq('id', id).single(),
       supabase.from('posts').select('*').eq('user_id', id).order('position', { ascending: true }),
-    ]).then(([{ data: p }, { data: ps }]) => {
+      supabase.from('friendships').select('id', { count: 'exact' }).eq('status', 'accepted').or(`requester_id.eq.${id},addressee_id.eq.${id}`),
+    ]).then(([{ data: p }, { data: ps }, { count }]) => {
       if (p) setProfile(p as Profile);
       if (ps) setPosts(ps as PostRow[]);
+      setFriendCount(count ?? 0);
       setLoading(false);
     });
   }, [id]);
@@ -103,6 +106,12 @@ export default function FriendProfileScreen() {
 
         {/* username */}
         <Text style={withFont(styles.username, { color: '#fff' })}>{profile.username ?? 'No name'}</Text>
+
+        {/* friends count */}
+        <View style={styles.friendsRow}>
+          <Text style={[styles.friendsCount, { color: accent }]}>{friendCount}</Text>
+          <Text style={styles.friendsLabel}>friends</Text>
+        </View>
 
         {/* song bar */}
         {profile.profile_song && (
@@ -175,4 +184,7 @@ const styles = StyleSheet.create({
   postImage: { width: '100%', height: 220, borderRadius: 6 },
   postText: { fontSize: 18, fontWeight: '700', lineHeight: 26 },
   noPosts: { color: '#555', fontStyle: 'italic', marginTop: 40 },
+  friendsRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: -4 },
+  friendsCount: { fontSize: 22, fontWeight: '800' },
+  friendsLabel: { fontSize: 13, color: '#aaa' },
 });
