@@ -1,3 +1,4 @@
+import React, { useEffect } from 'react';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,7 +20,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
 
-  const inAuthRoute = segments[0] === 'auth';
+  useEffect(() => {
+    if (loading) return;
+    const inAuthRoute = segments[0] === 'auth';
+    if (!session && !inAuthRoute) router.replace('/auth');
+    if (session && inAuthRoute) router.replace('/(tabs)');
+  }, [session, loading, segments]);
 
   if (loading) {
     return (
@@ -27,16 +33,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         <ActivityIndicator color="#fff" size="large" />
       </View>
     );
-  }
-
-  if (!session && !inAuthRoute) {
-    router.replace('/auth');
-    return null;
-  }
-
-  if (session && inAuthRoute) {
-    router.replace('/(tabs)');
-    return null;
   }
 
   return <>{children}</>;
@@ -54,6 +50,7 @@ export default function RootLayout() {
           <Stack>
             <Stack.Screen name="auth" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="profile/[id]" options={{ headerShown: false }} />
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
         </AuthGate>
