@@ -467,8 +467,11 @@ export default function ProfileScreen() {
   const songSoundRef = useRef<Audio.Sound | null>(null);
 
   // ── hydrate local state from db profile ──────────────────────────────────
+  const hasHydrated = useRef(false);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || hasHydrated.current) return;
+    hasHydrated.current = true;
+
     if (profile.bg_id) {
       const found = BACKGROUND_OPTIONS.find(b => b.id === profile.bg_id);
       if (found) setBgState(found);
@@ -484,7 +487,7 @@ export default function ProfileScreen() {
     if (profile.username) setUsername(profile.username);
     if (profile.bio) setBio(profile.bio);
     if (profile.profile_song) setProfileSong(profile.profile_song as SpotifyTrack);
-  }, [profile?.id]); // only run once when profile first loads
+  }, [profile]); // re-check every time profile updates until hydrated
 
   // ── wrapped setters that also persist ────────────────────────────────────
   function setBg(item: typeof BACKGROUND_OPTIONS[0]) {
@@ -973,7 +976,7 @@ export default function ProfileScreen() {
         onSelect={(track) => {
           setProfileSong(track); setSongPlaying(false);
           songSoundRef.current?.unloadAsync(); songSoundRef.current = null;
-          saveProfile({ profile_song: track as any });
+          saveProfile({ profile_song: { id: track.id, name: track.name, artists: track.artists, albumArt: track.albumArt, previewUrl: track.previewUrl ?? null } as any });
         }} />
     </View>
   );
